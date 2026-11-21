@@ -9,6 +9,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 5000;
+
+const PYTHON_SERVICE_URL = (
+    process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:5001"
+).replace(/\/+$/, "");
+
 const DATA_FILE = path.join(__dirname, "sessions.json");
 
 // Read saved sessions
@@ -72,7 +78,7 @@ app.post("/api/sessions", async (req, res) => {
         }
 
         const pythonResponse = await fetch(
-            "http://127.0.0.1:5001/recommend",
+            `${PYTHON_SERVICE_URL}/recommend`,
             {
                 method: "POST",
                 headers: {
@@ -110,7 +116,6 @@ app.post("/api/sessions", async (req, res) => {
             recommendation: recommendation.message,
             recommendationDetails: recommendation,
 
-            // Actual completed study tracking
             completedStudyMinutes: 0,
             completedBlocks: [],
 
@@ -169,7 +174,6 @@ app.post("/api/sessions/:id/completions", (req, res) => {
             });
         }
 
-        // Support sessions created before this feature
         if (!Array.isArray(session.completedBlocks)) {
             session.completedBlocks = [];
         }
@@ -178,7 +182,6 @@ app.post("/api/sessions/:id/completions", (req, res) => {
             session.completedStudyMinutes = 0;
         }
 
-        // Prevent the same timer block from being counted twice
         const alreadyRecorded = session.completedBlocks.some(
             block => block.completionId === completionId
         );
@@ -237,10 +240,6 @@ app.get("/api/sessions", (req, res) => {
     }
 });
 
-const PORT = 5000;
-
-app.listen(PORT, () => {
-    console.log(
-        `StudyBreak AI Backend running on http://localhost:${PORT}`
-    );
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`StudyBreak AI Backend running on port ${PORT}`);
 });
